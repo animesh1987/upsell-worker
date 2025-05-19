@@ -12,23 +12,28 @@ export default {
 
 		switch (url.pathname) {
 			case '/getProduct':
-				const productUrl = `https://api.bigcommerce.com/stores/uri9d2bvwu/v3/catalog/products/${111}`;
-				const response = await fetch(productUrl, {
-					method: 'GET',
-					headers: {
-						'X-Auth-Token': env.X_AUTH_TOKEN,
-						'X-Auth-Client': env.X_Auth_Client,
-						'Content-Type': 'application/json'
-					}
-				});
+				const productId = 111;
+				const productUrl = `https://api.bigcommerce.com/stores/${env.STORE_HASH}/v3/catalog/products/${productId}`;
+				const imageUrl = `https://api.bigcommerce.com/stores/${env.STORE_HASH}/v3/catalog/products/${productId}/images`;
+				const headers = {
+					'X-Auth-Token': env.X_AUTH_TOKEN,
+					'X-Auth-Client': env.X_Auth_Client,
+					'Content-Type': 'application/json'
+				};
 
-				const data = await response.json();
+				const [productResponse, imageResponse] = await Promise.all([
+					fetch(productUrl, { method: 'GET', headers }),
+					fetch(imageUrl, { method: 'GET', headers })
+				]);
 
-				return new Response(JSON.stringify(data), {
-					status: response.status,
+				const [productData, imageData] = await Promise.all([productResponse.json(), imageResponse.json()]);
+				let product = JSON.stringify({ ...productData.data, images: imageData.data });
+
+				return new Response(product, {
+					status: productResponse.status,
 					headers: {
 						...corsHeaders(),
-						'Content-Type': response.headers.get('Content-Type') || 'application/json'
+						'Content-Type': productResponse.headers.get('Content-Type') || 'application/json'
 					}
 				});
 
