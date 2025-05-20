@@ -1,3 +1,11 @@
+const apiHeaders = (env) => {
+	return {
+		'X-Auth-Token': env.X_AUTH_TOKEN,
+		'X-Auth-Client': env.X_Auth_Client,
+		'Content-Type': 'application/json'
+	}
+};
+
 export default {
 	async fetch(request, env, ctx) {
 		console.log('incoming request');
@@ -34,6 +42,40 @@ export default {
 					headers: {
 						...corsHeaders(),
 						'Content-Type': productResponse.headers.get('Content-Type') || 'application/json'
+					}
+				});
+			
+			case '/addToCart':
+				/* Test curl -X POST http://localhost:8787/addToCart -H "Content-Type: application/json" -d '{
+				"cart_id": "0578e447-ebeb-4a3d-86f9-160e56ab386a",
+                "line_items": [
+        			{
+            			"name": "test",
+            			"quantity": 1,
+            			"product_id": 107
+        			}
+    			]
+			}'*/
+				
+				const payload = await request.json();
+				console.log('payload is', payload);
+				console.log('payload is', payload.cart_id);
+				console.log('payload is', payload.line_items);
+				const cartItemsApi = `https://api.bigcommerce.com/stores/${env.STORE_HASH}/v3/carts/${payload.cart_id}/items`;
+
+				const updatedCart = await fetch(cartItemsApi, {
+					method: 'POST',
+					headers: apiHeaders(env),
+					body: JSON.stringify({line_items: payload.line_items}),
+				});
+
+				const data = await updatedCart.json();
+
+				return new Response(JSON.stringify(data), {
+					status: updatedCart.status,
+					headers: {
+						...corsHeaders(),
+						'Content-Type': 'application/json'
 					}
 				});
 
